@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "LumenMarkdown.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "LumenMarkdown.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}

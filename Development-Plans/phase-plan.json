@@ -1,0 +1,439 @@
+{
+  "project": {
+    "name": "Lumen Markdown",
+    "workingTitle": true,
+    "type": "WinUI 3 desktop application",
+    "framework": ".NET 10 (net10.0-windows10.0.22000.0)",
+    "ui": "WinUI 3 / Windows App SDK 2.6.x stable",
+    "targetOs": "Windows 11 x64",
+    "distribution": "Portable unpackaged ZIP, framework-dependent .NET, self-contained Windows App SDK, unsigned",
+    "persistence": "JSON settings and recent files via System.Text.Json; no database",
+    "status": "planned",
+    "generated": "2026-10-30",
+    "note": "Planning artifact only. No phase has been executed. Commands are instructions for later implementation."
+  },
+  "userDecisions": {
+    "UD-1": "Balanced reader and editor: split live preview, syntax highlighting, open/save",
+    "UD-2": "Windows 11 only, x64",
+    "UD-3": "Portable unpackaged ZIP, framework-dependent, unsigned",
+    "UD-4": "Greenfield; no existing code or assets; placeholder branding",
+    "UD-5": "No database; JSON settings and recent files"
+  },
+  "verifiedStack": {
+    "dotnetRuntime": "10.0.14",
+    "dotnetSdkCurrent": "10.0.403",
+    "dotnetSdkInstalledOnHost": ["10.0.400", "10.0.401"],
+    "dotnet11": "11.0.0-rc.3 (go-live) - not used",
+    "windowsAppSdkStable": "2.6.4",
+    "markdig": "1.5.1",
+    "webView2Sdk": "1.0.4314.35",
+    "editorCandidate": "TextControlBox-WinUI 1.7.x (MIT, gated)",
+    "editorFallback": "RichEditBox (built-in)"
+  },
+  "phases": [
+    {
+      "id": "P0",
+      "name": "Prerequisites and technical spike",
+      "outcome": "A machine that builds and launches a minimal WinUI 3 window, plus evidence for self-contained Windows App SDK, the editor control, and WebView2 messaging.",
+      "runnableSlice": "Blank window titled 'Lumen Markdown' that launches from dotnet run and from a published folder.",
+      "tasks": [
+        "Verify or install SDK 10.0.403 or relax global.json",
+        "Create solution, App, Core and Core.Tests projects",
+        "Set TFM, x64, WindowsPackageType None, WindowsAppSDKSelfContained true",
+        "Add global.json, Directory.Build.props, Directory.Packages.props",
+        "Spike A: publish and launch on a machine without Windows App Runtime",
+        "Spike B: TextControlBox with 5000 lines and Narrator",
+        "Spike C: WebView2 loads bundled HTML and receives one message",
+        "Write docs/spike-notes.md with verdicts and exact versions"
+      ],
+      "affectedFiles": [
+        "LumenMarkdown.sln",
+        "global.json",
+        "Directory.Build.props",
+        "Directory.Packages.props",
+        "src/LumenMarkdown.App/LumenMarkdown.App.csproj",
+        "src/LumenMarkdown.App/App.xaml",
+        "src/LumenMarkdown.App/App.xaml.cs",
+        "src/LumenMarkdown.App/MainWindow.xaml",
+        "src/LumenMarkdown.App/MainWindow.xaml.cs",
+        "src/LumenMarkdown.App/app.manifest",
+        "docs/spike-notes.md"
+      ],
+      "commands": [
+        "dotnet --list-sdks",
+        "dotnet new list winui",
+        "dotnet restore LumenMarkdown.sln",
+        "dotnet build LumenMarkdown.sln -c Debug -p:Platform=x64",
+        "dotnet run --project src/LumenMarkdown.App -p:Platform=x64",
+        "dotnet publish src/LumenMarkdown.App -c Release -r win-x64 --self-contained false -p:Platform=x64 -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -o artifacts/spike"
+      ],
+      "verification": [
+        "Window opens, resizes and closes cleanly",
+        "Published folder launches on a clean Windows 11 x64 machine without the Windows App Runtime",
+        "Editor spike accepts 5000 lines without multi-second freeze and is exposed as editable text to Narrator",
+        "WebView2 spike displays bundled HTML and logs one received message",
+        "Spike verdicts recorded in docs/spike-notes.md"
+      ],
+      "exitCriteria": "All three spikes have written verdicts and the published blank app launches on the clean VM.",
+      "userValidationGate": {
+        "required": true,
+        "prompt": "Run artifacts/spike/LumenMarkdown.exe on a clean Windows 11 x64 machine and confirm the window opens.",
+        "approvalRecorded": false
+      },
+      "estimateDays": "3-5",
+      "risks": ["R-01", "R-03", "R-06"]
+    },
+    {
+      "id": "P1",
+      "name": "Shell and window",
+      "outcome": "The real window chrome, theme, empty state and command surface, with no file I/O.",
+      "runnableSlice": "App opens to the start surface; layout toggle and theme switch work; commands are correctly enabled.",
+      "tasks": [
+        "Build MainWindow XAML: title bar, command bar, split document area, status bar",
+        "Add MainViewModel with observable base and relay commands",
+        "Add ThemeService and SettingsStore skeleton",
+        "Add EditorPane around TextBox and PreviewPane placeholder",
+        "Build start surface with drop zone, Open, empty recents, shortcut hints",
+        "Wire keyboard accelerators and layout cycling",
+        "Persist and restore window geometry and splitter ratio",
+        "Add rolling file logger and global exception handler"
+      ],
+      "affectedFiles": [
+        "src/LumenMarkdown.App/MainWindow.xaml",
+        "src/LumenMarkdown.App/MainWindow.xaml.cs",
+        "src/LumenMarkdown.App/Views/StartSurface.xaml",
+        "src/LumenMarkdown.App/Views/EditorPane.xaml",
+        "src/LumenMarkdown.App/Views/PreviewPane.xaml",
+        "src/LumenMarkdown.App/ViewModels/MainViewModel.cs",
+        "src/LumenMarkdown.App/Services/ThemeService.cs",
+        "src/LumenMarkdown.App/Services/WindowStateService.cs",
+        "src/LumenMarkdown.Core/Settings/",
+        "src/LumenMarkdown.Core/Logging/"
+      ],
+      "commands": [
+        "dotnet build LumenMarkdown.sln -c Debug -p:Platform=x64",
+        "dotnet run --project src/LumenMarkdown.App -p:Platform=x64",
+        "dotnet test tests/LumenMarkdown.Core.Tests -c Debug"
+      ],
+      "verification": [
+        "Window restores size, position and maximised state",
+        "Ctrl+Shift+P cycles three layouts and splitter ratio persists",
+        "Theme switch applies immediately and persists",
+        "Open, Save and Find are disabled with no document",
+        "Deleting settings.json and relaunching falls back to defaults without a crash",
+        "200 percent text scale shows no clipped command labels"
+      ],
+      "exitCriteria": "Settings round-trip works, layout and theme persist, and a 10-minute resize/theme session produces no unhandled exception.",
+      "userValidationGate": {
+        "required": true,
+        "prompt": "Confirm the visual shell matches the UX manual closely enough to build on, and approve placeholder branding.",
+        "approvalRecorded": false
+      },
+      "estimateDays": "4-6",
+      "risks": ["R-07", "R-10"]
+    },
+    {
+      "id": "P2",
+      "name": "Open and read",
+      "outcome": "A real Markdown file opens from picker, drag-drop and command line, and renders faithfully.",
+      "runnableSlice": "Open README.md and read it rendered; editor shows raw source read-only.",
+      "tasks": [
+        "Implement TextFileLoader with encoding detection, binary rejection and size guard",
+        "Implement FilePickerService with InitializeWithWindow",
+        "Implement DocumentSession state machine with hash-based dirty state",
+        "Implement MarkdownRenderer with Markdig advanced extensions and DisableHtml",
+        "Build preview shell template, preview.css and CSP; resolve relative paths via base href",
+        "Wire drop target, command-line argument and File Open",
+        "Detect read-only files and show badge",
+        "Add encoding, HTML escaping and extension unit tests"
+      ],
+      "affectedFiles": [
+        "src/LumenMarkdown.Core/IO/TextFileLoader.cs",
+        "src/LumenMarkdown.Core/Documents/DocumentSession.cs",
+        "src/LumenMarkdown.Core/Markdown/MarkdownRenderer.cs",
+        "src/LumenMarkdown.Core/Markdown/PreviewTemplate.cs",
+        "src/LumenMarkdown.App/Services/FilePickerService.cs",
+        "src/LumenMarkdown.App/Views/PreviewPane.xaml.cs",
+        "src/LumenMarkdown.App/Assets/preview.css",
+        "tests/LumenMarkdown.Core.Tests/MarkdownRendererTests.cs",
+        "tests/LumenMarkdown.Core.Tests/EncodingTests.cs"
+      ],
+      "commands": [
+        "dotnet test tests/LumenMarkdown.Core.Tests -c Debug --filter Category=Core",
+        "dotnet run --project src/LumenMarkdown.App -p:Platform=x64 -- \"C:\\samples\\README.md\""
+      ],
+      "verification": [
+        "1 MB README renders headings, tables, task lists, code fences and quotes correctly",
+        "CRLF and LF files display without doubled blank lines",
+        "UTF-8 BOM file shows no BOM characters",
+        "Relative image resolves against document folder; missing image shows alt text",
+        "Opening an .exe shows a clear binary-file message",
+        "Read-only file shows badge and Save disabled"
+      ],
+      "exitCriteria": "All fixture files render with expected structure and every error state has a visible message.",
+      "userValidationGate": {
+        "required": true,
+        "prompt": "Open three of your own Markdown files and confirm rendering fidelity, especially tables, code blocks and relative images.",
+        "approvalRecorded": false
+      },
+      "estimateDays": "5-7",
+      "risks": ["R-05", "R-02"]
+    },
+    {
+      "id": "P3",
+      "name": "Edit and live preview",
+      "outcome": "Editing with an updating preview that preserves scroll, focus and responsiveness.",
+      "runnableSlice": "Type in the left pane and watch the right pane follow within 300 ms.",
+      "tasks": [
+        "Make editor editable with guarded two-way binding",
+        "Implement 250 ms debounced render with generation numbers and one in-flight render",
+        "Wire WebView2 bridge: NavigateToString first load, PostWebMessageAsString updates",
+        "Preserve scroll ratio and editor caret across updates",
+        "Cancel renders on document switch and window close",
+        "Implement hash-based dirty state and title/status updates",
+        "Propagate theme to preview without reloading",
+        "Add renderer determinism and debounce coalescing tests"
+      ],
+      "affectedFiles": [
+        "src/LumenMarkdown.App/ViewModels/DocumentViewModel.cs",
+        "src/LumenMarkdown.Core/Markdown/MarkdownRenderer.cs",
+        "src/LumenMarkdown.App/Views/PreviewPane.xaml.cs",
+        "src/LumenMarkdown.App/Views/EditorPane.xaml.cs",
+        "src/LumenMarkdown.App/MainWindow.xaml.cs",
+        "src/LumenMarkdown.App/Assets/preview.js",
+        "tests/LumenMarkdown.Core.Tests/RenderPipelineTests.cs"
+      ],
+      "commands": [
+        "dotnet build LumenMarkdown.sln -c Debug -p:Platform=x64",
+        "dotnet run --project src/LumenMarkdown.App -p:Platform=x64 -- \"C:\\samples\\long.md\"",
+        "dotnet test tests/LumenMarkdown.Core.Tests -c Debug"
+      ],
+      "verification": [
+        "Typing updates preview after pause without flicker or scroll jump",
+        "Holding a key for 5 seconds keeps UI responsive; preview settles on release",
+        "Scrolling mid-edit keeps preview at the same relative position",
+        "Theme change does not reload the document or lose the caret",
+        "No ObjectDisposedException in logs when closing mid-render",
+        "Measured p95 keystroke-to-preview is 300 ms or less on a 100 KB document"
+      ],
+      "exitCriteria": "Measured keystroke-to-preview p95 <= 300 ms and no stale render overwrites a newer one.",
+      "userValidationGate": {
+        "required": true,
+        "prompt": "Edit a real document for five minutes and confirm the preview feels live and the caret never jumps.",
+        "approvalRecorded": false
+      },
+      "estimateDays": "5-7",
+      "risks": ["R-04", "R-02"]
+    },
+    {
+      "id": "P4",
+      "name": "Syntax highlighting and editing UX",
+      "outcome": "Markdown source highlighting, line numbers, find, go-to-line, and a final editor control decision.",
+      "runnableSlice": "Open a document and see coloured Markdown with a line gutter; Ctrl+F finds text.",
+      "tasks": [
+        "Score TextControlBox and RichEditBox against stability, performance, accessibility and licence",
+        "Implement IEditorAdapter and bind the chosen control with the other as fallback",
+        "Add line-number gutter and current-line highlight",
+        "Implement Markdown token classifier and theme brushes",
+        "Build find bar with match count, next/previous, case toggle and Esc restore",
+        "Build go-to-line input with validation",
+        "Add debounced word count and caret line/column",
+        "Verify accelerators with IME and RTL text",
+        "Add token classifier and find wrap-around tests"
+      ],
+      "affectedFiles": [
+        "src/LumenMarkdown.App/Views/EditorPane.xaml.cs",
+        "src/LumenMarkdown.App/Services/Editor/IEditorAdapter.cs",
+        "src/LumenMarkdown.App/Services/Editor/TextControlBoxAdapter.cs",
+        "src/LumenMarkdown.App/Services/Editor/RichEditBoxAdapter.cs",
+        "src/LumenMarkdown.Core/Editing/MarkdownTokenizer.cs",
+        "src/LumenMarkdown.App/Views/FindBar.xaml",
+        "tests/LumenMarkdown.Core.Tests/TokenizerTests.cs"
+      ],
+      "commands": [
+        "dotnet build LumenMarkdown.sln -c Debug -p:Platform=x64",
+        "dotnet test tests/LumenMarkdown.Core.Tests -c Debug --filter Category=Editor",
+        "dotnet run --project src/LumenMarkdown.App -p:Platform=x64 -- \"C:\\samples\\showcase.md\""
+      ],
+      "verification": [
+        "Headings, bold, links, inline code and fenced code are visually distinct in both themes",
+        "Gutter numbers align with lines and wrapping is clearly indicated",
+        "Find reports correct counts, wraps, and Esc restores the caret",
+        "Go-to-line rejects 0, non-numeric and out-of-range values",
+        "Narrator reads editor content and announces selection",
+        "Pasting 1 MB completes without a UI freeze longer than 1 second"
+      ],
+      "exitCriteria": "Chosen editor passes accessibility and 1 MB checks; token fixtures pass; fallback approved if no third-party control qualifies.",
+      "userValidationGate": {
+        "required": true,
+        "prompt": "Review the highlighting palette and find/go-to-line behaviour and accept or reject the editor control decision.",
+        "approvalRecorded": false
+      },
+      "estimateDays": "6-9",
+      "risks": ["R-03", "R-11"]
+    },
+    {
+      "id": "P5",
+      "name": "Save, recent files and recovery",
+      "outcome": "A complete document lifecycle: save, Save As, dirty prompts, recents, external-change detection and draft recovery.",
+      "runnableSlice": "Edit, save, restart, reopen from recents, recover after a forced kill.",
+      "tasks": [
+        "Implement atomic TextFileWriter preserving encoding and line endings",
+        "Implement Save and Save As with picker defaults",
+        "Implement dirty-close prompt on window close, document close and open-over-current",
+        "Implement recent files with dedupe, cap, pruning and persistence",
+        "Detect external changes with FileSystemWatcher and timestamp comparison",
+        "Implement 60-second draft autosave and recovery prompt",
+        "Add settings schema migration and corruption backup",
+        "Add atomic write, dirty transition, recents and recovery tests"
+      ],
+      "affectedFiles": [
+        "src/LumenMarkdown.Core/IO/TextFileWriter.cs",
+        "src/LumenMarkdown.Core/Documents/DocumentSession.cs",
+        "src/LumenMarkdown.Core/Settings/RecentFiles.cs",
+        "src/LumenMarkdown.App/Services/FileWatcherService.cs",
+        "src/LumenMarkdown.App/Services/DraftService.cs",
+        "src/LumenMarkdown.App/ViewModels/MainViewModel.cs",
+        "src/LumenMarkdown.App/Views/Dialogs/UnsavedChangesDialog.xaml",
+        "tests/LumenMarkdown.Core.Tests/SaveTests.cs",
+        "tests/LumenMarkdown.Core.Tests/RecoveryTests.cs"
+      ],
+      "commands": [
+        "dotnet test tests/LumenMarkdown.Core.Tests -c Debug",
+        "dotnet run --project src/LumenMarkdown.App -p:Platform=x64 -- \"C:\\samples\\save-me.md\""
+      ],
+      "verification": [
+        "Ctrl+S writes the file, clears the dirty dot and preserves line endings",
+        "Save As updates title and recents",
+        "Close with edits offers Save, Discard and Cancel; Cancel keeps the caret",
+        "Forced kill followed by relaunch offers and restores the draft",
+        "External edit while open shows the stale banner",
+        "Deleted recent file shows Not found and is removed",
+        "Corrupt settings.json backs up and starts with defaults"
+      ],
+      "exitCriteria": "Every save, close and recovery path behaves as described with no data loss in the forced-kill test.",
+      "userValidationGate": {
+        "required": true,
+        "prompt": "Perform a full edit, save, close and reopen cycle on your own file and confirm no content or line-ending damage.",
+        "approvalRecorded": false
+      },
+      "estimateDays": "5-7",
+      "risks": ["R-05", "R-07"]
+    },
+    {
+      "id": "P6",
+      "name": "Hardening and performance",
+      "outcome": "The app survives ugly inputs and meets the non-functional targets.",
+      "runnableSlice": "Full feature set running against the stress corpus without crashes or unacceptable latency.",
+      "tasks": [
+        "Build stress corpus: 1 MB, 10 MB, 50k lines, deep nesting, wide tables, malformed Markdown, emoji, RTL",
+        "Fix rendering cliffs with nesting/table limits and preview throttling",
+        "Measure NFR-01 to NFR-05 and record docs/performance.md",
+        "Audit memory: WebView2 disposal, event unsubscription, session leaks",
+        "Run accessibility audit and high-contrast check",
+        "Run DPI matrix and mixed-monitor drag test",
+        "Inject failures: read-only folder, disk full, locked file, missing WebView2",
+        "Run 30-minute soak script",
+        "Fix P1/P2 defects and log P3s for v1.1"
+      ],
+      "affectedFiles": [
+        "docs/performance.md",
+        "docs/accessibility-audit.md",
+        "src/LumenMarkdown.Core/Markdown/MarkdownRenderer.cs",
+        "src/LumenMarkdown.App/Views/PreviewPane.xaml.cs",
+        "tests/fixtures/stress/"
+      ],
+      "commands": [
+        "dotnet build LumenMarkdown.sln -c Release -p:Platform=x64",
+        "dotnet test tests/LumenMarkdown.Core.Tests -c Release",
+        "dotnet run --project src/LumenMarkdown.App -c Release -p:Platform=x64 -- \"C:\\stress\\1mb.md\""
+      ],
+      "verification": [
+        "1 MB opens in 1 second or less with no typing lag and memory at or below 350 MB",
+        "10 MB warns and opens read-only while remaining usable",
+        "Malformed Markdown renders as text without exceptions",
+        "High-contrast theme keeps all text readable and focus visible",
+        "Dragging between 100 and 200 percent monitors does not blur or clip",
+        "Soak run leaves no errors in the log"
+      ],
+      "exitCriteria": "NFR-01 to NFR-05 measured within target, accessibility audit has no blockers, soak run clean.",
+      "userValidationGate": {
+        "required": true,
+        "prompt": "Run the stress files on your hardware and accept the measured performance or name the case that must improve.",
+        "approvalRecorded": false
+      },
+      "estimateDays": "6-8",
+      "risks": ["R-04", "R-09", "R-03"]
+    },
+    {
+      "id": "P7",
+      "name": "Packaging and release",
+      "outcome": "A signed-off portable ZIP that runs on a clean Windows 11 x64 machine.",
+      "runnableSlice": "Unzip on a clean VM, launch, open and save a file, close.",
+      "tasks": [
+        "Produce Release publish with unpackaged and self-contained WinAppSDK properties",
+        "Add manifest with PerMonitorV2, longPathAware and version info",
+        "Trim publish output and verify required native DLLs",
+        "Create ZIP with README, LICENSE, third-party notices and changelog",
+        "Compute SHA-256 and write release notes with known limitations",
+        "Run clean-VM acceptance checklist",
+        "Rehearse rollback with the previous ZIP",
+        "Tag v1.0.0 and archive artifacts"
+      ],
+      "affectedFiles": [
+        "src/LumenMarkdown.App/LumenMarkdown.App.csproj",
+        "src/LumenMarkdown.App/app.manifest",
+        "Packaging/README.txt",
+        "Packaging/THIRD-PARTY-NOTICES.md",
+        "CHANGELOG.md",
+        "artifacts/LumenMarkdown-1.0.0-win-x64.zip"
+      ],
+      "commands": [
+        "dotnet publish src/LumenMarkdown.App -c Release -r win-x64 --self-contained false -p:Platform=x64 -p:WindowsPackageType=None -p:WindowsAppSDKSelfContained=true -p:PublishReadyToRun=false -o artifacts/publish/win-x64",
+        "Compress-Archive -Path artifacts/publish/win-x64/* -DestinationPath artifacts/LumenMarkdown-1.0.0-win-x64.zip",
+        "Get-FileHash artifacts/LumenMarkdown-1.0.0-win-x64.zip -Algorithm SHA256"
+      ],
+      "verification": [
+        "ZIP extracts to a path with spaces and launches",
+        "First run creates settings and logs under LOCALAPPDATA without admin rights",
+        "Open, edit, save, close and reopen work on the clean VM",
+        "Uninstall by folder deletion leaves no required residue",
+        "SHA-256 matches the published value",
+        "README states the .NET 10 Desktop Runtime prerequisite and the SmartScreen warning"
+      ],
+      "exitCriteria": "Clean-VM acceptance checklist passes with only the .NET 10 Desktop Runtime installed, and the SHA-256 is published.",
+      "userValidationGate": {
+        "required": true,
+        "prompt": "Run the ZIP on a clean machine, sign the acceptance checklist, and explicitly authorise release.",
+        "approvalRecorded": false
+      },
+      "estimateDays": "3-4",
+      "risks": ["R-01", "R-08", "R-10"]
+    }
+  ],
+  "assumptions": {
+    "A-1": "One document per window is sufficient for v1",
+    "A-2": "WebView2 Evergreen runtime is available on target machines",
+    "A-3": "Preview code-fence colouring is optional (v1.1)",
+    "A-4": "Settings may live in %LOCALAPPDATA%\\LumenMarkdown",
+    "A-5": "No telemetry and no auto-update in v1",
+    "A-6": "Lumen Markdown and the placeholder icon are temporary"
+  },
+  "openPrerequisites": [
+    "Install SDK 10.0.403 or relax global.json to the installed 10.0.401",
+    "Confirm the WinUI 3 unpackaged project template path (Visual Studio or CLI)",
+    "Confirm Windows App SDK 2.6.4 restores on this machine",
+    "Confirm TextControlBox package identity or plan to vendor its source",
+    "Provide a clean Windows 11 x64 VM for Phase 0 and Phase 7",
+    "Obtain the .NET 10 Desktop Runtime installer for clean-VM testing"
+  ],
+  "releaseGates": [
+    "G1 Release build clean",
+    "G2 All unit and integration tests green",
+    "G3 Smoke script passes on Debug and Release",
+    "G4 Performance targets met",
+    "G5 Accessibility audit has no blockers",
+    "G6 Clean-VM acceptance checklist signed",
+    "G7 No P1 or P2 defects open"
+  ]
+}

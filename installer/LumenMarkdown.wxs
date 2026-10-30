@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Wix xmlns="http://wixtoolset.org/schemas/v4/wxs"
+     xmlns:ui="http://wixtoolset.org/schemas/v4/wxs/ui">
+
+  <!--
+    Per-machine MSI: installs under %ProgramFiles%\Lumen Markdown, adds a Start Menu
+    shortcut for all users and registers in Add/Remove Programs. Installing requires
+    elevation (UAC).
+  -->
+  <Package Name="Lumen Markdown"
+           Manufacturer="Lumen Markdown"
+           Version="1.0.0"
+           Language="1033"
+           UpgradeCode="7C1F4B2A-8E51-4B7C-9A3D-2F6E0C5B8D41"
+           Scope="perMachine"
+           Compressed="yes"
+           InstallerVersion="500">
+
+    <MajorUpgrade DowngradeErrorMessage="A newer version of Lumen Markdown is already installed." />
+    <MediaTemplate EmbedCab="yes" CompressionLevel="high" />
+
+    <Icon Id="AppIcon" SourceFile="Assets\app.ico" />
+    <Property Id="ARPPRODUCTICON" Value="AppIcon" />
+    <Property Id="ARPCONTACT" Value="Lumen Markdown" />
+
+    <StandardDirectory Id="ProgramFiles64Folder">
+      <Directory Id="INSTALLFOLDER" Name="Lumen Markdown" />
+    </StandardDirectory>
+
+    <StandardDirectory Id="ProgramMenuFolder">
+      <Directory Id="AppMenuFolder" Name="Lumen Markdown">
+        <Component Id="StartMenuShortcut" Guid="*">
+          <Shortcut Id="AppShortcut"
+                    Name="Lumen Markdown"
+                    Description="Markdown editor and reader"
+                    Target="[INSTALLFOLDER]LumenMarkdown.exe"
+                    WorkingDirectory="INSTALLFOLDER"
+                    Icon="AppIcon" />
+          <RemoveFolder Id="RemoveAppMenuFolder" On="uninstall" />
+          <RegistryValue Root="HKLM" Key="Software\LumenMarkdown" Name="installed" Type="integer" Value="1" KeyPath="yes" />
+        </Component>
+      </Directory>
+    </StandardDirectory>
+
+    <Feature Id="Main" Title="Lumen Markdown" Level="1">
+      <ComponentGroupRef Id="AppFiles" />
+      <ComponentRef Id="StartMenuShortcut" />
+    </Feature>
+
+    <WixVariable Id="WixUILicenseRtf" Value="License.rtf" />
+    <ui:WixUI Id="WixUI_Minimal" />
+  </Package>
+</Wix>

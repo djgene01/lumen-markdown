@@ -1,0 +1,41 @@
+%% Application framework and window layout
+%% WinUI 3 Markdown Editor and Reader - .NET 10
+graph TB
+    subgraph HOST["Windows 11 desktop host"]
+        A["WinUI 3 App<br/>App.xaml / App.xaml.cs"]
+        B["MainWindow<br/>XAML shell + custom title bar"]
+        C["Command bar<br/>Open · Save · Save As · Undo · Redo"]
+        D["Editor pane<br/>TextControlBox control"]
+        E["Preview pane<br/>WebView2 + Markdown CSS"]
+        F["Status bar<br/>dirty flag · cursor · word count"]
+    end
+
+    subgraph CORE["Application core - net10.0 class library"]
+        G["DocumentService<br/>load · save · dirty tracking"]
+        H["MarkdownPipeline<br/>Markdig 1.5.1 + extensions"]
+        I["SettingsStore<br/>System.Text.Json"]
+        J["FilePickerService<br/>FileOpenPicker / FileSavePicker"]
+        K["PreviewBridge<br/>HTML fragment + debounce"]
+    end
+
+    subgraph PLATFORM["Platform dependencies"]
+        L["Windows App SDK 2.6.x<br/>WinUI 3 runtime"]
+        M["WebView2 Evergreen runtime"]
+        N["Local file system<br/>user-chosen folder"]
+    end
+
+    A --> B
+    B --> C
+    B --> D
+    B --> E
+    B --> F
+    C --> G
+    D --> G
+    G --> H
+    H --> K
+    K --> E
+    G --> J
+    J --> N
+    I --> B
+    L --- B
+    M --- E

@@ -1,0 +1,14 @@
+%% Phase dependency map
+%% WinUI 3 Markdown Editor and Reader - .NET 10
+graph LR
+    P0["Phase 0<br/>Prerequisites and spike"] --> P1["Phase 1<br/>Shell and window"]
+    P1 --> P2["Phase 2<br/>Open and read"]
+    P2 --> P3["Phase 3<br/>Edit and live preview"]
+    P3 --> P4["Phase 4<br/>Syntax highlighting and UX"]
+    P4 --> P5["Phase 5<br/>Save, recent files, recovery"]
+    P5 --> P6["Phase 6<br/>Hardening and performance"]
+    P5 --> P7["Phase 7<br/>Packaging and release"]
+    P6 --> P7
+    P7 --> G{"User validation gate"}
+    G -->|Accepted| R["v1.0 release"]
+    G -->|Rejected| P4

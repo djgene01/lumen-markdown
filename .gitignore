@@ -1,0 +1,12 @@
+bin/
+obj/
+artifacts/
+.vs/
+*.user
+*.suo
+*.binlog
+TestResults/
+
+# WiX installer build output
+installer/generated/
+samples/large.md

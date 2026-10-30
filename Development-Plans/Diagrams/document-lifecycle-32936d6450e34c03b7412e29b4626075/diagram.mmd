@@ -1,0 +1,42 @@
+%% Document lifecycle - open, edit, preview, save
+%% WinUI 3 Markdown Editor and Reader - .NET 10
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant W as MainWindow (UI thread)
+    participant F as FilePickerService
+    participant D as DocumentService
+    participant M as MarkdownPipeline (Markdig)
+    participant V as WebView2 preview
+    participant S as SettingsStore
+
+    U->>W: Open file
+    W->>F: PickOpenFileAsync()
+    F-->>W: StorageFile or null
+    W->>D: LoadAsync(path)
+    D->>D: Read text (UTF-8), detect encoding/BOM
+    D-->>W: Document (text, path, isDirty=false)
+    W->>S: Record recent file
+    W->>M: Render(text)
+    M-->>W: HTML fragment
+    W->>V: NavigateToString(shell + fragment)
+    V-->>U: Rendered document
+
+    U->>W: Type in editor
+    W->>D: MarkDirty()
+    W->>W: Restart 250 ms debounce timer
+    W->>M: Render(text) on debounce
+    M-->>W: HTML fragment
+    W->>V: PostWebMessage(html) or NavigateToString
+    V-->>U: Live preview updates
+
+    U->>W: Save (Ctrl+S)
+    W->>D: SaveAsync()
+    alt No path yet
+        W->>F: PickSaveFileAsync()
+        F-->>W: StorageFile
+    end
+    D->>D: Write UTF-8, preserve line endings
+    D-->>W: isDirty=false
+    W->>S: Persist window state
+    W-->>U: Status bar shows Saved
